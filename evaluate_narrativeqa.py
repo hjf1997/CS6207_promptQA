@@ -1,0 +1,30 @@
+import numpy as np
+import rouge
+import pandas as pd
+from tqdm import tqdm
+
+rouge_l_evaluator = rouge.Rouge(
+    metrics=["rouge-l"],
+)
+
+def rouge_l(p, g):
+    return rouge_l_evaluator.get_scores(p, g)
+
+
+if __name__ == '__main__':
+    file_path = './NarrativeQE/result_pattern1.csv'
+    qa_results = pd.read_csv(file_path)
+    scores_r = []
+    scores_p = []
+    scores_f = []
+    for index, row in tqdm(qa_results.iterrows(), desc='Evaluating', total=len(qa_results)):
+        gt, pred = row['ans'], row['pred']
+        if not isinstance(pred, str) or pred == '':
+            continue
+        rouge_l_score = rouge_l(pred, gt)
+        scores_r.append(rouge_l_score[0]['rouge-l']['r'])
+        scores_p.append(rouge_l_score[0]['rouge-l']['p'])
+        scores_f.append(rouge_l_score[0]['rouge-l']['f'])
+    print('score_r %f'% np.array(scores_r).mean())
+    print('score_p %f'% np.array(scores_p).mean())
+    print('score_f %f'% np.array(scores_f).mean())
