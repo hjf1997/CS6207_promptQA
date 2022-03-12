@@ -1,6 +1,6 @@
 import torch
 from transformers import BartTokenizer
-from bart import MyBart
+from bart import UnifiedQABart, Bart
 import pandas as pd
 from tqdm import tqdm
 import argparse
@@ -11,8 +11,10 @@ def prediction(model, tokenizer, qa_data, pattern: str, device):
     preds = []
     for index, row in tqdm(qa_data.iterrows(), desc='Testing', total=len(qa_data)):
         question, passage = transform_data(row['text'])
-        input_text = pattern.replace('[Question]', question + '\\n')
-        input_text = input_text.replace('[Passage]', passage + '\\n')
+        # input_text = pattern.replace('[Question]', question + '\\n')
+        # input_text = input_text.replace('[Passage]', passage + '\\n')
+        input_text = pattern.replace('[Question]', question)
+        input_text = input_text.replace('[Passage]', passage)
         pred = model.generate_from_string(input_text, tokenizer=tokenizer, device=device)
         preds.append(pred[0])
     return preds
@@ -39,16 +41,17 @@ def main():
     unifiedqa_path = "unifiedQA-bart/unifiedQA-uncased/best-model.pt"  # path to the downloaded checkpoint
 
     tokenizer = BartTokenizer.from_pretrained(base_model)
-    model = MyBart.from_pretrained(base_model, state_dict=torch.load(unifiedqa_path))
+    # model = Bart.from_pretrained(base_model, state_dict=torch.load(unifiedqa_path))
+    model = Bart.from_pretrained(base_model)
     model = model.to(device)
     model.eval()
 
     qa_data = pd.read_csv(args.dataset_path, sep='\t', header=None)
     qa_data.columns = ['text', 'ans']
 
-    pattern = ['[Question] [Passage]',
-               '[Passage] According to the passage, [Question]',
-               'Based on the following passage, [Question] [Passage]'
+    pattern = ['[Question] [Passage] <mask>',
+               '[Passage] According to the passage, [Question] <mask>',
+               'Based on the following passage, [Question] <mask>. [Passage]'
                ]
 
     preds = prediction(model, tokenizer, qa_data, pattern[args.prompt_pattern], device)
