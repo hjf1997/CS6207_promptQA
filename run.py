@@ -79,9 +79,9 @@ def train(args, logger, model, train_data, dev_data, optimizer, scheduler):
 
     logger.info("Starting training!")
     for epoch in range(int(args.num_train_epochs)):
-        for batch in train_data.dataloader:
+        t = tqdm(train_data.dataloader, total=len(train_data.dataloader))
+        for batch in t:
             global_step += 1
-            print(global_step)
             batch = [b.to(device) for b in batch]
             loss = model(input_ids=batch[0], attention_mask=batch[1],
                          decoder_input_ids=batch[2], decoder_attention_mask=batch[3],
@@ -92,7 +92,10 @@ def train(args, logger, model, train_data, dev_data, optimizer, scheduler):
                 logger.info("Stop training because loss=%s" % (loss.data))
                 stop_training=True
                 break
-            train_losses.append(loss.detach().cpu())
+
+            loss_item = loss.detach().cpu()
+            t.set_description('Loss: ' + str(loss_item.item()))
+            train_losses.append(loss_item)
             loss.backward()
 
             if global_step % args.gradient_accumulation_steps == 0:
