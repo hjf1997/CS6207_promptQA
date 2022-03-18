@@ -3,8 +3,6 @@ import json
 import re
 import string
 import numpy as np
-from tqdm import tqdm
-from collections import defaultdict
 import torch
 from torch.utils.data import Dataset, DataLoader
 import random
@@ -14,9 +12,9 @@ import operator
 class QAData(object):
 
     def __init__(self, logger, args, data_path, is_training):
-        dataset_name = "narrativeqa"
         self.data_path = data_path
         self.data_type = data_path.split("/")[-1][:-4]
+        dataset_name = data_path.split("/").lower()
         assert self.data_type in ["train", "dev", "test"]
 
         self.data = {}
@@ -89,7 +87,8 @@ class QAData(object):
                                                             padding='max_length', truncation=True,
                                                             max_length=self.args.max_input_length)
             answer_input = self.tokenizer.batch_encode_plus(answers, truncation=True,
-                                                            padding='max_length')
+                                                            padding='max_length',
+                                                            max_length=self.args.max_input_length)
             input_ids, attention_mask = question_input["input_ids"], question_input["attention_mask"]
             decoder_input_ids, decoder_attention_mask = answer_input["input_ids"], answer_input["attention_mask"]
             print ("Finish tokenizering...")

@@ -7,30 +7,9 @@ import argparse
 import os
 
 
-def prediction(model, tokenizer, qa_data, pattern: str, device):
-    preds = []
-    for index, row in tqdm(qa_data.iterrows(), desc='Testing', total=len(qa_data)):
-        question, passage = transform_data(row['text'])
-        # input_text = pattern.replace('[Question]', question + '\\n')
-        # input_text = input_text.replace('[Passage]', passage + '\\n')
-        input_text = pattern.replace('[Question]', question)
-        input_text = input_text.replace('[Passage]', passage)
-        pred = model.generate_from_string(input_text, tokenizer=tokenizer, device=device)
-        preds.append(pred[0])
-    return preds
-
-
-def transform_data(sen: str):
-    """
-    Transform training data into question and passage
-    """
-    sen = sen.split('\\n')
-    question, passage = sen
-    return question, passage
-
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset_path", type=str, default='./NarrativeQE/data_narrativeqa_test.tsv')
+    parser.add_argument("--train_file", default="./Drop/train.tsv")
     parser.add_argument("--save_dir", type=str, default='./NarrativeQE/results')
     parser.add_argument("--prompt_pattern", type=int, default=0)
     parser.add_argument("--gpu_ids", type=int, default='-1')  # -1 means cpu
@@ -49,7 +28,8 @@ def main():
     qa_data = pd.read_csv(args.dataset_path, sep='\t', header=None)
     qa_data.columns = ['text', 'ans']
 
-    pattern = ['[Question] [Passage] <mask>',
+    pattern = ['[Passage] [Question] <mask>',
+                '[Passage] [Question] The answer is <mask>',
                '[Passage] According to the passage, [Question] <mask>',
                'Based on the following passage, [Question] <mask>. [Passage]'
                ]

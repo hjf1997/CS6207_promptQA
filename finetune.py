@@ -12,8 +12,8 @@ def main():
     parser = argparse.ArgumentParser()
 
     ## Basic parameters
-    parser.add_argument("--train_file", default="./NarrativeQA/train.tsv")
-    parser.add_argument("--predict_file", default="./NarrativeQA/dev.tsv")
+    parser.add_argument("--train_file", default="./Drop/train.tsv")
+    parser.add_argument("--predict_file", default="./Drop/dev.tsv")
     parser.add_argument("--output_dir", default=None, type=str, required=True)
     parser.add_argument("--do_train", action='store_true')
     parser.add_argument("--do_predict", action='store_true')
@@ -28,8 +28,8 @@ def main():
     parser.add_argument("--gpu_ids", type=str, default='-1')  # -1 means cpu
 
     # Preprocessing/decoding-related parameters
-    parser.add_argument('--max_input_length', type=int, default=1024)
-    parser.add_argument('--max_output_length', type=int, default=1024)
+    parser.add_argument('--max_input_length', type=int, default=400)
+    parser.add_argument('--max_output_length', type=int, default=400)
     parser.add_argument('--num_beams', type=int, default=4)
     parser.add_argument("--append_another_bos", action='store_true', default=False)
 
@@ -50,7 +50,7 @@ def main():
                         help="Max gradient norm.")
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int,
                         help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=10000.0, type=float,
+    parser.add_argument("--num_train_epochs", default=250.0, type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_steps", default=0, type=int,
                         help="Linear warmup over warmup_steps.")
@@ -60,7 +60,7 @@ def main():
     parser.add_argument("--verbose", action='store_true',
                         help="If true, all of the warnings related to data processing will be printed. "
                              "A number of warnings are expected for a normal SQuAD evaluation.")
-    parser.add_argument('--eval_period', type=int, default=820,
+    parser.add_argument('--eval_period', type=int, default=2400,
                         help="Evaluate & save model")
     parser.add_argument('--prefix', type=str, default='',
                         help="Prefix for saving predictions")
@@ -74,7 +74,9 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
 
-    patterns = ['[Question] [Passage] <mask>',
+    patterns = ['[Passage] [Question]'
+                '[Passage] [Question] <mask>',
+                '[Passage] [Question] The answer is <mask>',
                '[Passage] According to the passage, [Question] <mask>',
                'Based on the following passage, [Question] <mask>. [Passage]'
                ]
