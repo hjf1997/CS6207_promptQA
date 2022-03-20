@@ -16,7 +16,7 @@ def run(args, logger):
     dev_data = QAData(logger, args, args.predict_file, False)
 
     if not args.skip_inference:
-        dev_data.load_dataset(tokenizer, 10)
+        dev_data.load_dataset(tokenizer)
         dev_data.load_dataloader()
 
     if args.do_train:
@@ -48,7 +48,7 @@ def run(args, logger):
 
     if args.do_predict:
         checkpoint = os.path.join(args.output_dir, 'best-model.pt') if args.checkpoint is None else args.checkpoint
-        model = QABart.from_pretrained("bart-large",
+        model = QABart.from_pretrained("facebook/bart-base",
                                        state_dict=torch.load(checkpoint))
         logger.info("Loading checkpoint from {}".format(checkpoint))
         if len(args.gpu_ids)>0:
