@@ -12,7 +12,7 @@ def rouge_l(p, g):
 
 
 if __name__ == '__main__':
-    file_path = './checkpoint/NarrativeQA/predictions.csv'
+    file_path = './checkpoint/NarrativeQA_pat3/predictions.csv'
     qa_results = pd.read_csv(file_path)
     scores_r = []
     scores_p = []
