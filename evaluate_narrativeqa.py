@@ -21,7 +21,7 @@ if __name__ == '__main__':
         gt, pred = row['answer'], row['prediction']
         # if not isinstance(pred, str) or pred == '':
         #     continue
-        rouge_l_score = rouge_l(pred, gt)
+        rouge_l_score = rouge_l(pred.lower(), gt.lower())
         scores_r.append(rouge_l_score[0]['rouge-l']['r'])
         scores_p.append(rouge_l_score[0]['rouge-l']['p'])
         scores_f.append(rouge_l_score[0]['rouge-l']['f'])

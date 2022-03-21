@@ -64,9 +64,10 @@ class QAData(object):
         postfix = self.tokenizer.__class__.__name__.replace("zer", "zed")
         preprocessed_path = os.path.join(
                 "/".join(self.data_path.split("/")[:-1]),
-                self.data_path.split("/")[-1].replace(".tsv", "{}{}-{}.json".format(
+                self.data_path.split("/")[-1].replace(".tsv", "{}{}-p{}-{}.json".format(
                     "-uncased" if self.args.do_lowercase else "",
                     "-xbos" if self.args.append_another_bos else "",
+                    str(self.args.pattern),
                     postfix)))
         if self.load and os.path.exists(preprocessed_path):
             self.logger.info("Loading pre-tokenized data from {}".format(preprocessed_path))

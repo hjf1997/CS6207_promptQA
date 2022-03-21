@@ -12,13 +12,13 @@ def main():
     parser = argparse.ArgumentParser()
 
     ## Basic parameters
-    parser.add_argument("--train_file", default="./NarrativeQA/train.tsv")
-    parser.add_argument("--predict_file", default="./NarrativeQA/dev.tsv")
+    parser.add_argument("--train_file", default="NarrativeQA/train.tsv")
+    parser.add_argument("--predict_file", default="NarrativeQA/dev.tsv")
     parser.add_argument("--output_dir", default=None, type=str, required=True)
     parser.add_argument("--do_train", action='store_true')
     parser.add_argument("--do_predict", action='store_true')
     parser.add_argument("--skip_inference", action='store_true')
-    parser.add_argument("--pattern", type=str, default=0)
+    parser.add_argument("--pattern", type=int, default=0)
     parser.add_argument("--num_few_shot", type=int, default=0)
 
     ## Model parameters
