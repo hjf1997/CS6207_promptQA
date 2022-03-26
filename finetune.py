@@ -74,10 +74,10 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
 
-    patterns = ['[Passage] [Question]'
+    patterns = ['[Passage] [Question]',
                 '[Passage] [Question] <mask>',
                 '[Passage] [Question] The answer is <mask>',
-               '[Passage] According to the passage, [Question] <mask>',
+               '[Passage] According to the above passage, [Question] <mask>',
                'Based on the following passage, [Question] <mask>. [Passage]'
                ]
     args.pattern = patterns[args.pattern]
