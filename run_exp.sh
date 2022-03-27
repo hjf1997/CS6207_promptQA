@@ -1,0 +1,16 @@
+python3 prompt_tuning.py \
+--do_train \
+--fix_LM \
+--randomize_prompt \
+--output_dir checkpoint/NarrativeQA_soft_len20 \
+--train_file NarrativeQA/train.tsv \
+--predict_file NarrativeQA/dev.tsv \
+--train_batch_size 24 \
+--predict_batch_size 32 \
+--append_another_bos \
+--do_lowercase \
+--gpu_ids 0 \
+--eval_period 2000 \
+--verbose \
+--num_few_shot 640 \
+--pattern_id 0
