@@ -43,10 +43,10 @@ class QABart_prompt(BartForConditionalGeneration):
     
     def forward(self, input_ids, attention_mask=None, encoder_outputs=None,
             decoder_input_ids=None, decoder_attention_mask=None,
-            use_cache=False, is_training=False, random=True, **model_inputs):
+            use_cache=False, is_training=False, inputs_embeds=None, random=True, **model_inputs):
 
         if input_ids is not None:
-            inputs_emb, attention_mask = self.get_input_embeds(input_ids, attention_mask, random)
+            inputs_embeds, attention_mask = self.get_input_embeds(input_ids, attention_mask, random)
 
         if is_training:
             decoder_start_token_id = self.config.decoder_start_token_id
@@ -56,13 +56,13 @@ class QABart_prompt(BartForConditionalGeneration):
         else:
             _decoder_input_ids = decoder_input_ids.clone()
         
-        decoder_input_emb = self.model.shared(decoder_input_ids)
-        #print(inputs_emb.shape, attention_mask.shape)
+        decoder_inputs_embeds = self.model.shared(decoder_input_ids)
+        
         outputs = self.model(
-            inputs_embeds=inputs_emb,
+            inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             encoder_outputs=encoder_outputs,
-            decoder_inputs_embeds=decoder_input_emb,
+            decoder_inputs_embeds=decoder_inputs_embeds,
             decoder_attention_mask=decoder_attention_mask,
             use_cache=use_cache,
             **model_inputs
