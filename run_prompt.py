@@ -54,7 +54,8 @@ def run_prompt(args, logger):
             for n, p in model.model.named_parameters():
                 p.requires_grad = False
             
-            optimizer = AdamW(model.soft_mlp.parameters(), lr=args.learning_rate, eps=args.adam_epsilon)
+            paras = list(model.soft_mlp.parameters()) + list(model.wte.parameters()) 
+            optimizer = AdamW(paras, lr=args.learning_rate, eps=args.adam_epsilon)
             scheduler = get_linear_schedule_with_warmup(optimizer,
                                             num_warmup_steps=args.warmup_steps,
                                             num_training_steps=100000)
@@ -119,7 +120,7 @@ def train(args, logger, model, train_data, dev_data, optimizer, scheduler):
             loss.backward()
 
             if global_step % args.gradient_accumulation_steps == 0:
-                torch.nn.utils.clip_grad_norm_(model.soft_mlp.parameters(), args.max_grad_norm)
+                # torch.nn.utils.clip_grad_norm_(model.soft_mlp.parameters(), args.max_grad_norm)
                 optimizer.step()    # We have accumulated enought gradients
                 scheduler.step()
                 # model.zero_grad()
@@ -187,8 +188,11 @@ def inference(model, dev_data, save_predictions=False):
                                  min_length=1,
                                  max_length=dev_data.args.max_output_length,
                                  early_stopping=True,)
+        
         for input_, output in zip(batch[0], outputs):
+            # print(output)
             pred = dev_data.decode(output)
+            # print(pred)
             predictions.append(pred)
             
     if save_predictions:

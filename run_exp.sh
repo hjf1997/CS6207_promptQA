@@ -2,10 +2,10 @@ python3 prompt_tuning.py \
 --do_train \
 --fix_LM \
 --randomize_prompt \
---output_dir checkpoint/NarrativeQA_soft_len20 \
+--output_dir checkpoint/NarrativeQA_soft_nofixinput \
 --train_file NarrativeQA/train.tsv \
 --predict_file NarrativeQA/dev.tsv \
---train_batch_size 24 \
+--train_batch_size 16 \
 --predict_batch_size 32 \
 --append_another_bos \
 --do_lowercase \
@@ -13,4 +13,5 @@ python3 prompt_tuning.py \
 --eval_period 2000 \
 --verbose \
 --num_few_shot 640 \
---pattern_id 0
+--pattern_id 0 \
+--learning_rate 1e-5
