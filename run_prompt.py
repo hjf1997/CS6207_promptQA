@@ -120,7 +120,8 @@ def train(args, logger, model, train_data, dev_data, optimizer, scheduler):
             loss.backward()
 
             if global_step % args.gradient_accumulation_steps == 0:
-                # torch.nn.utils.clip_grad_norm_(model.soft_mlp.parameters(), args.max_grad_norm)
+                if args.fix_LM == False:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
                 optimizer.step()    # We have accumulated enought gradients
                 scheduler.step()
                 # model.zero_grad()
