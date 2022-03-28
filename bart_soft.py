@@ -10,22 +10,31 @@ class QABart_prompt(BartForConditionalGeneration):
         self.emb_dim = self.model.shared.embedding_dim
         self.mid_dim = 2*self.emb_dim
 
+        # initialize soft prompt
+        self.prompt_len = 10 # hyper
+
+        self.wte = nn.Embedding(self.prompt_len, self.emb_dim)
         self.soft_mlp = nn.Sequential(
             nn.Linear(self.emb_dim, self.mid_dim),
             nn.Tanh(),
             nn.Linear(self.mid_dim, self.emb_dim)
         )
 
-        # initialize soft prompt
-        self.prompt_len = 20 # hyper
-        self.soft_prompt = self.randomize_prompt()
+        # self.soft_prompt = self.randomize_prompt()
 
-    def randomize_prompt(self):
-        mean, std = self.model.shared.weight.mean(0), self.model.shared.weight.std(0)
-        soft_prompt = torch.zeros([self.prompt_len, self.emb_dim]).cuda()
-        for i in range(self.prompt_len):
-            soft_prompt[i] = torch.normal(mean, std)
-        soft_prompt = soft_prompt.detach().clone()
+    # def randomize_prompt(self):
+    #     # mean, std = self.model.shared.weight.mean(0), self.model.shared.weight.std(0)
+    #     soft_prompt = torch.zeros([self.prompt_len, self.emb_dim]).cuda()
+    #     for i in range(self.prompt_len):
+    #         soft_prompt[i] = torch.normal(mean, std)
+    #     soft_prompt = soft_prompt.detach().clone()
+
+    #     return soft_prompt
+    
+    def get_soft_prompt(self):
+        prompt_tokens = torch.arange(self.prompt_len).long().cuda()
+        soft_prompt = self.wte(prompt_tokens)
+        soft_prompt = self.soft_mlp(soft_prompt)
 
         return soft_prompt
 
@@ -33,7 +42,8 @@ class QABart_prompt(BartForConditionalGeneration):
         input_shape = input_ids.shape
         inputs_embeds = self.model.shared(input_ids)
         
-        prefix_prompt = self.soft_mlp(self.soft_prompt).unsqueeze(0).repeat(input_shape[0], 1, 1)
+        soft_prompt = self.get_soft_prompt()
+        prefix_prompt = self.soft_mlp(soft_prompt).unsqueeze(0).repeat(input_shape[0], 1, 1)
         inputs_embeds = torch.cat([prefix_prompt, inputs_embeds[:, :-self.prompt_len, :]], dim=1)
 
         padding_attention_mask = torch.ones([input_shape[0], self.prompt_len]).cuda()
