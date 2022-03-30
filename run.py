@@ -85,6 +85,7 @@ def train(args, logger, model, train_data, dev_data, optimizer, scheduler):
             batch = [b.to(device) for b in batch]
             loss = model(input_ids=batch[0], attention_mask=batch[1],
                          decoder_input_ids=batch[2], decoder_attention_mask=batch[3],
+                         answer_input_ids = batch[4], answer_attention_mask=batch[5],
                          is_training=True)
             if len(args.gpu_ids) > 1:
                 loss = loss.mean() # mean() to average on multi-gpu.

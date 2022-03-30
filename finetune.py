@@ -18,7 +18,9 @@ def main():
     parser.add_argument("--do_train", action='store_true')
     parser.add_argument("--do_predict", action='store_true')
     parser.add_argument("--skip_inference", action='store_true')
-    parser.add_argument("--pattern", type=int, default=0)
+    # parser.add_argument("--pattern", type=int, default=0)
+    parser.add_argument("--encoder_pattern", type=int, default=0)
+    parser.add_argument("--decoder_pattern", type=int, default=0)
     parser.add_argument("--num_few_shot", type=int, default=0)
 
     ## Model parameters
@@ -74,15 +76,23 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
 
-    patterns = ['[Passage] [Question]',
-                '[Passage] [Question] <mask>',
-                '[Passage] [Question] The answer is <mask>',
-               '[Passage] According to the above passage, [Question] <mask>',
-               'Based on the following passage, [Question] <mask>. [Passage]',
-               '[Question] [Passage]',
-               '[Question] <mask> [Passage]',
-               ]
-    args.pattern = patterns[args.pattern]
+    # patterns = ['[Passage] [Question]',
+    #             '[Passage] [Question] <mask>',
+    #             '[Passage] [Question] The answer is <mask>',
+    #            '[Passage] According to the above passage, [Question] <mask>',
+    #            'Based on the following passage, [Question] <mask>. [Passage]',
+    #            '[Question] [Passage]',
+    #            '[Question] <mask> [Passage]',
+    #            ]
+    # args.pattern = patterns[args.pattern]
+
+    encoder_patterns = ['[Passage] [Question]']
+    decoder_patterns = ['The answer is [Answer]',
+                        '[Question] The answer is [Answer]',
+                        '[Question] [Answer]']
+    args.encoder_pattern = encoder_patterns[args.encoder_pattern]
+    args.decoder_pattern = decoder_patterns[args.decoder_pattern]
+
     ##### Start writing logs
 
     log_filename = "{}log.txt".format("" if args.do_train else "eval_")

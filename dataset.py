@@ -23,18 +23,23 @@ class QAData(object):
         assert data_path.endswith(".tsv"), "data file has to be in tsv format"
         curr_data_path = data_path.replace("{}.tsv".format(self.data_type),
                                            "data_{}_{}.tsv".format(dataset_name, self.data_type))
-        self.data = {"id": [], "question": [], "answer": []}
+        self.data = {"id": [], "encoder_inputs": [], "decoder_inputs": [], "answer": []}
         with open(curr_data_path, "r") as f:
             cnt = 0
             for line in f:
                 question, answer = line.split("\t")
                 question, passage = question.split('\\n')
-                input_text = args.pattern.replace('[Question]', question)
+                input_text = args.encoder_pattern.replace('[Question]', question)
                 input_text = input_text.replace('[Passage]', passage)
-                self.data["question"].append(input_text)
+                self.data["encoder_inputs"].append(input_text)
+
+                decoder_text = args.decoder_pattern.replace('[Question]', question)
+                decoder_text = decoder_text.replace('[Passage]', passage)
+                decoder_text = decoder_text.replace('[Answer]', answer)
+                self.data["decoder_inputs"].append(decoder_text)
+
                 output_text = answer
                 self.data["answer"].append(output_text)
-
                 self.data["id"].append("{}-{}".format(self.data_type, cnt))
                 cnt += 1
 
@@ -65,40 +70,52 @@ class QAData(object):
         postfix = self.tokenizer.__class__.__name__.replace("zer", "zed")
         preprocessed_path = os.path.join(
                 "/".join(self.data_path.split("/")[:-1]),
-                self.data_path.split("/")[-1].replace(".tsv", "{}{}-p{}-{}.json".format(
+                self.data_path.split("/")[-1].replace(".tsv", "{}{}-ep_{}-dp_{}-{}.json".format(
                     "-uncased" if self.args.do_lowercase else "",
                     "-xbos" if self.args.append_another_bos else "",
-                    str(self.args.pattern),
+                    str(self.args.encoder_pattern),
+                    str(self.args.decoder_pattern),
                     postfix)))
         if self.load and os.path.exists(preprocessed_path):
             self.logger.info("Loading pre-tokenized data from {}".format(preprocessed_path))
             with open(preprocessed_path, "r") as f:
-                input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, metadata = json.load(f)
+                input_ids, attention_mask, decoder_input_ids, decoder_attention_mask, answer_input_ids, answer_attention_mask, metadata = json.load(f)
         else:
             print("Start tokenizing...")
-            metadata, questions, answers = [], [], []
-            metadata.append((len(questions), len(questions)+len(self.data["question"])))
-            questions += self.data["question"]
+            metadata, encoder_inputs, decoder_inputs, answers = [], [], []
+            metadata.append((len(encoder_inputs), len(encoder_inputs)+len(self.data["encoder_inputs"])))
+            encoder_inputs += self.data["encoder_inputs"]
+            decoder_inputs += self.data["decoder_inputs"]
             answers += self.data["answer"]
+
             if self.args.do_lowercase:
-                questions = [question.lower() for question in questions]
-                answers = [answer.lower() for answer in answers]
+                encoder_inputs = [txt.lower() for txt in encoder_inputs]
+                decoder_inputs = [txt.lower() for txt in decoder_inputs]
+                answers = [txt.lower() for txt in answers]
+
             if self.args.append_another_bos:
-                questions = ["<s> "+question for question in questions]
-                answers = ["<s> " +answer for answer in answers]
-            question_input = self.tokenizer.batch_encode_plus(questions,
+                encoder_inputs = ["<s> "+txt for txt in encoder_inputs]
+                decoder_inputs = ["<s> "+txt for txt in decoder_inputs]
+                answers = ["<s> " +txt for txt in answers]
+
+            encoder_input = self.tokenizer.batch_encode_plus(encoder_inputs,
+                                                            padding='max_length', truncation=True,
+                                                            max_length=self.args.max_input_length)
+            decoder_input = self.tokenizer.batch_encode_plus(decoder_inputs,
                                                             padding='max_length', truncation=True,
                                                             max_length=self.args.max_input_length)
             answer_input = self.tokenizer.batch_encode_plus(answers, truncation=True,
                                                             padding='max_length',
                                                             max_length=self.args.max_output_length)
-            input_ids, attention_mask = question_input["input_ids"], question_input["attention_mask"]
-            decoder_input_ids, decoder_attention_mask = answer_input["input_ids"], answer_input["attention_mask"]
+            input_ids, attention_mask = encoder_input["input_ids"], encoder_input["attention_mask"]
+            decoder_input_ids, decoder_attention_mask = decoder_input["input_ids"], decoder_input["attention_mask"]
+            answer_input_ids, answer_attention_mask = answer_input["input_ids"], answer_input["attention_mask"]
+
             print ("Finish tokenizering...")
             if self.load:
                 with open(preprocessed_path, "w") as f:
                     json.dump([input_ids, attention_mask,
-                               decoder_input_ids, decoder_attention_mask, metadata], f)
+                               decoder_input_ids, decoder_attention_mask, answer_input_ids, answer_attention_mask, metadata], f)
 
         if few_shot:
             if not os.path.isfile('./few_shot_'+str(few_shot) + '.npy'):
@@ -118,7 +135,7 @@ class QAData(object):
             decoder_attention_mask = index_func(decoder_attention_mask)
 
         self.dataset = MyQADataset(input_ids, attention_mask,
-                                          decoder_input_ids, decoder_attention_mask, self.is_training)
+                                          decoder_input_ids, decoder_attention_mask,  answer_input_ids, answer_attention_mask, self.is_training)
 
     def load_dataloader(self, do_return=False):
         if self.is_training:
@@ -154,11 +171,14 @@ class MyQADataset(Dataset):
     def __init__(self,
                  input_ids, attention_mask,
                  decoder_input_ids, decoder_attention_mask,
+                 answer_input_ids, answer_attention_mask,
                  is_training=False):
         self.input_ids = torch.LongTensor(input_ids)
         self.attention_mask = torch.LongTensor(attention_mask)
         self.decoder_input_ids = torch.LongTensor(decoder_input_ids)
         self.decoder_attention_mask = torch.LongTensor(decoder_attention_mask)
+        self.answer_input_ids = torch.LongTensor(answer_input_ids)
+        self.answer_attention_mask = torch.LongTensor(answer_attention_mask)
         self.is_training = is_training
         assert len(self.input_ids)==len(self.attention_mask)==len(self.decoder_input_ids)==len(self.decoder_attention_mask)
 
@@ -172,7 +192,7 @@ class MyQADataset(Dataset):
             return self.input_ids[idx], self.attention_mask[idx]
         else:
             return self.input_ids[idx], self.attention_mask[idx], \
-            self.decoder_input_ids[idx], self.decoder_attention_mask[idx]
+            self.decoder_input_ids[idx], self.decoder_attention_mask[idx], self.answer_input_ids[idx], self.answer_attention_mask[idx]
 
 
 def get_exact_match(prediction, groundtruth):
