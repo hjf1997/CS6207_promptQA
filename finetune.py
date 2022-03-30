@@ -78,7 +78,9 @@ def main():
                 '[Passage] [Question] <mask>',
                 '[Passage] [Question] The answer is <mask>',
                '[Passage] According to the above passage, [Question] <mask>',
-               'Based on the following passage, [Question] <mask>. [Passage]'
+               'Based on the following passage, [Question] <mask>. [Passage]',
+               '[Question] [Passage]',
+               '[Question] <mask> [Passage]',
                ]
     args.pattern = patterns[args.pattern]
     ##### Start writing logs

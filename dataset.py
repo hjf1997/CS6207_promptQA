@@ -104,10 +104,10 @@ class QAData(object):
             if not os.path.isfile('./few_shot_'+str(few_shot) + '.npy'):
                 index = random.sample(range(self.cnt), few_shot)
                 np.save('./few_shot_'+str(few_shot)+'.npy', np.array(index))
-                self.logger.info('Creat index for few shot ' + str(few_shot))
+                self.logger.info('Creating index for few shot ' + str(few_shot))
             else:
                 index = np.load('./few_shot_'+str(few_shot) + '.npy').tolist()
-                self.logger.info('Load index for few shot ' + str(few_shot))
+                self.logger.info('Loading index for few shot ' + str(few_shot))
             index_func = operator.itemgetter(*index)
             self.data["question"] = index_func(self.data["question"])
             self.data["answer"] = index_func(self.data["answer"])
