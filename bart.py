@@ -6,7 +6,7 @@ from transformers.modeling_outputs import Seq2SeqLMOutput
 
 class QABart(BartForConditionalGeneration):
     def forward(self, input_ids, attention_mask=None, encoder_outputs=None,
-            decoder_input_ids=None, decoder_attention_mask=None, answer_input_ids=None, answer_attention_mask=None,
+            decoder_input_ids=None, decoder_attention_mask=None,
             use_cache=False, is_training=False, **model_inputs):
 
         if is_training:
@@ -15,6 +15,9 @@ class QABart(BartForConditionalGeneration):
             _decoder_input_ids[..., 1:] = decoder_input_ids[..., :-1].clone()
             _decoder_input_ids[..., 0] = decoder_start_token_id
         else:
+        #     # _decoder_input_ids = decoder_input_ids.new_zeros(decoder_input_ids.shape[0], decoder_input_ids.shape[1]+1)
+        #     # _decoder_input_ids[..., :-1] = decoder_input_ids.clone()
+        #     # _decoder_input_ids[..., -1]  = self.config.decoder_start_token_id
             _decoder_input_ids = decoder_input_ids.clone()
 
         outputs = self.model(
@@ -30,8 +33,8 @@ class QABart(BartForConditionalGeneration):
         if is_training:
             loss_fct = nn.CrossEntropyLoss(reduce=False)
             losses = loss_fct(lm_logits.view(-1, self.config.vocab_size),
-                              answer_input_ids.view(-1))
-            loss = torch.sum(losses * answer_attention_mask.float().view(-1))
+                              decoder_input_ids.view(-1))
+            loss = torch.sum(losses * decoder_attention_mask.float().view(-1))
             return loss
         return Seq2SeqLMOutput(
             loss=0,

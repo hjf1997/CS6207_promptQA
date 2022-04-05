@@ -12,7 +12,7 @@ def rouge_l(p, g):
 
 
 if __name__ == '__main__':
-    file_path = './checkpoint/NarrativeQA_pat3/predictions.csv'
+    file_path = './checkpoint/NarrativeQA_enp1_decp0_128/predictions.csv'
     qa_results = pd.read_csv(file_path)
     scores_r = []
     scores_p = []
@@ -21,10 +21,15 @@ if __name__ == '__main__':
         gt, pred = row['answer'], row['prediction']
         # if not isinstance(pred, str) or pred == '':
         #     continue
-        rouge_l_score = rouge_l(pred.lower(), gt.lower())
-        scores_r.append(rouge_l_score[0]['rouge-l']['r'])
-        scores_p.append(rouge_l_score[0]['rouge-l']['p'])
-        scores_f.append(rouge_l_score[0]['rouge-l']['f'])
+        try:
+            pred = pred.lower().replace('the answer is', '')
+            gt = gt.lower().replace('the answer is', '')
+            rouge_l_score = rouge_l(pred.lower(), gt.lower())
+            scores_r.append(rouge_l_score[0]['rouge-l']['r'])
+            scores_p.append(rouge_l_score[0]['rouge-l']['p'])
+            scores_f.append(rouge_l_score[0]['rouge-l']['f'])
+        except Exception as e:
+            print(e)
     scores_r, scores_p, scores_f = np.array(scores_r), np.array(scores_p), np.array(scores_f)
     scores_r, scores_p, scores_f = scores_r.reshape([-1, 2]), scores_p.reshape([-1, 2]), scores_f.reshape([-1, 2])
     scores_r, scores_p, scores_f = np.max(scores_r, axis=-1), np.max(scores_p, axis=-1), np.max(scores_f, axis=-1)

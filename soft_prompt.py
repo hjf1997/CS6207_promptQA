@@ -5,7 +5,7 @@ import logging
 import random
 import numpy as np
 import torch
-from run import run
+from run_prompt import run_prompt
 
 
 def main():
@@ -18,9 +18,7 @@ def main():
     parser.add_argument("--do_train", action='store_true')
     parser.add_argument("--do_predict", action='store_true')
     parser.add_argument("--skip_inference", action='store_true')
-    # parser.add_argument("--pattern", type=int, default=0)
-    parser.add_argument("--encoder_pattern", type=int, default=0)
-    parser.add_argument("--decoder_pattern", type=int, default=0)
+    parser.add_argument("--pattern_id", type=int, default=0)
     parser.add_argument("--num_few_shot", type=int, default=0)
 
     ## Model parameters
@@ -36,9 +34,12 @@ def main():
     parser.add_argument("--append_another_bos", action='store_true', default=False)
 
     # Training-related parameters
-    parser.add_argument("--train_batch_size", default=40, type=int,
+    parser.add_argument("--fix_LM", action='store_true')
+    parser.add_argument("--randomize_prompt", action='store_true')
+    parser.add_argument('--prompt_len', type=int, default=5)
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--predict_batch_size", default=400, type=int,
+    parser.add_argument("--predict_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument("--learning_rate", default=1e-5, type=float,
                         help="The initial learning rate for Adam.")
@@ -52,7 +53,7 @@ def main():
                         help="Max gradient norm.")
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int,
                         help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=1000.0, type=float,
+    parser.add_argument("--num_train_epochs", default=500.0, type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_steps", default=0, type=int,
                         help="Linear warmup over warmup_steps.")
@@ -76,23 +77,8 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
 
-    # patterns = ['[Passage] [Question]',
-    #             '[Passage] [Question] <mask>',
-    #             '[Passage] [Question] The answer is <mask>',
-    #            '[Passage] According to the above passage, [Question] <mask>',
-    #            'Based on the following passage, [Question] <mask>. [Passage]',
-    #            '[Question] [Passage]',
-    #            '[Question] <mask> [Passage]',
-    #            ]
-    # args.pattern = patterns[args.pattern]
-
-    encoder_patterns = ['[Passage] [Question]']
-    decoder_patterns = ['The answer is [Answer]',
-                        '[Question] The answer is [Answer]',
-                        '[Question] [Answer]']
-    args.encoder_pattern = encoder_patterns[args.encoder_pattern]
-    args.decoder_pattern = decoder_patterns[args.decoder_pattern]
-
+    patterns = ['[Question] <mask>. [Passage]']
+    args.pattern = patterns[args.pattern_id]
     ##### Start writing logs
 
     log_filename = "{}log.txt".format("" if args.do_train else "eval_")
@@ -134,7 +120,7 @@ def main():
             raise ValueError("If `do_predict` is True, then `predict_file` must be specified.")
 
     logger.info("Using {} gpus".format(len(args.gpu_ids)))
-    run(args, logger)
+    run_prompt(args, logger)
 
 if __name__ == '__main__':
     main()

@@ -5,60 +5,63 @@ from transformers import T5ForConditionalGeneration, BartForConditionalGeneratio
 from transformers.modeling_outputs import Seq2SeqLMOutput
 
 class QABart_prompt(BartForConditionalGeneration):
-    def __init__(self, config):
+    def __init__(self, config, args):
         super().__init__(config)
+        self.random_init = args.randomize_prompt
         self.emb_dim = self.model.shared.embedding_dim
-        self.mid_dim = 2*self.emb_dim
+        self.mid_dim = 4 * self.emb_dim
 
         # initialize soft prompt
-        self.prompt_len = 10 # hyper
-
-        self.wte = nn.Embedding(self.prompt_len, self.emb_dim)
+        self.prompt_len = args.prompt_len
+        if self.random_init:
+            self.wte = nn.Embedding(self.prompt_len, self.emb_dim)
         self.soft_mlp = nn.Sequential(
             nn.Linear(self.emb_dim, self.mid_dim),
             nn.Tanh(),
-            nn.Linear(self.mid_dim, self.emb_dim)
+            nn.Linear(self.mid_dim, self.emb_dim),
         )
-
-        # self.soft_prompt = self.randomize_prompt()
-
-    # def randomize_prompt(self):
-    #     # mean, std = self.model.shared.weight.mean(0), self.model.shared.weight.std(0)
-    #     soft_prompt = torch.zeros([self.prompt_len, self.emb_dim]).cuda()
-    #     for i in range(self.prompt_len):
-    #         soft_prompt[i] = torch.normal(mean, std)
-    #     soft_prompt = soft_prompt.detach().clone()
-
-    #     return soft_prompt
+        print(self.soft_mlp)
     
-    def get_soft_prompt(self):
-        prompt_tokens = torch.arange(self.prompt_len).long().cuda()
-        soft_prompt = self.wte(prompt_tokens)
-        soft_prompt = self.soft_mlp(soft_prompt)
+#     def get_soft_prompt(self, random):
+#         prompt_tokens = torch.arange(self.prompt_len).long().to(self.device)
+#         soft_prompt = self.wte(prompt_tokens)
+#         soft_prompt = self.soft_mlp(soft_prompt)
 
-        return soft_prompt
+#         return soft_prompt
 
-    def get_input_embeds(self, input_ids, attention_mask, random=False):
+    def get_input_embeds(self, input_ids, attention_mask, q2_input_ids, q2_attention_mask, random):
         input_shape = input_ids.shape
+        q2_shape = q2_input_ids.shape
         inputs_embeds = self.model.shared(input_ids)
         
-        soft_prompt = self.get_soft_prompt()
-        prefix_prompt = self.soft_mlp(soft_prompt).unsqueeze(0).repeat(input_shape[0], 1, 1)
+        if random:
+            prompt_tokens = torch.arange(self.prompt_len).long().to(self.device)
+            soft_prompt = self.wte(prompt_tokens)
+            soft_prompt = self.soft_mlp(soft_prompt)
+            prefix_prompt = soft_prompt.unsqueeze(0).repeat(input_shape[0], 1, 1)
+            inputs_embeds = torch.cat([prefix_prompt, inputs_embeds[:, :-self.prompt_len, :]], dim=1)
+        else:
+            q2_embeds = self.model.shared(q2_input_ids)
+            prefix_prompt = self.soft_mlp(q2_embeds)
+            inputs_embeds = torch.cat([prefix_prompt, inputs_embeds[:, :-q2_shape[1], :]], dim=1)
+            
         # print(max(torch.max(prefix_prompt[0], dim=-1)[0]), max(torch.max(inputs_embeds[0], dim=-1)[0]))
         # print(min(torch.min(prefix_prompt[0], dim=-1)[0]), min(torch.min(inputs_embeds[0], dim=-1)[0]))
-        inputs_embeds = torch.cat([prefix_prompt, inputs_embeds[:, :-self.prompt_len, :]], dim=1)
-
-        padding_attention_mask = torch.ones([input_shape[0], self.prompt_len]).cuda()
-        attention_mask = torch.cat([padding_attention_mask, attention_mask[:, :-self.prompt_len]], dim=-1)
+     
+        if random:
+            padding_attention_mask = torch.ones([input_shape[0], self.prompt_len]).to(self.device)
+            attention_mask = torch.cat([padding_attention_mask, attention_mask[:, :-self.prompt_len]], dim=-1)
+        else:
+            attention_mask = torch.cat([q2_attention_mask, attention_mask[:, :-q2_shape[1]]], dim=-1)
 
         return inputs_embeds, attention_mask
     
     def forward(self, input_ids, attention_mask=None, encoder_outputs=None,
-            decoder_input_ids=None, decoder_attention_mask=None,
+            decoder_input_ids=None, decoder_attention_mask=None, q2_input_ids=None, q2_attention_mask=None,
             use_cache=False, is_training=False, inputs_embeds=None, random=True, **model_inputs):
 
         if input_ids is not None:
-            inputs_embeds, attention_mask = self.get_input_embeds(input_ids, attention_mask, random)
+            inputs_embeds, attention_mask = self.get_input_embeds(input_ids, attention_mask, q2_input_ids, q2_attention_mask, self.random_init)
 
         if is_training:
             decoder_start_token_id = self.config.decoder_start_token_id
