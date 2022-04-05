@@ -73,7 +73,7 @@ python prompt_tuning.py \
 --gpu_ids 0 \
 --eval_period 2000 \
 --verbose \
---num_few_shot 640 \
+--num_few_shot 650 \
 --pattern_id 0 \
 --learning_rate 1e-5
 ```
