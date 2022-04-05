@@ -27,7 +27,7 @@ Download pre-processed NarrativeQA dataset from [Google Cloud](https://console.c
 
 ### Training
 ```angular2html
-python finxed_prompt.py --do_train\
+python fixed_prompt.py --do_train\
 --output_dir checkpoint/NarrativeQA_enp1_decp0_128\
 --train_file NarrativeQA/train.tsv\
 --predict_file NarrativeQA/dev.tsv\
@@ -45,7 +45,7 @@ python finxed_prompt.py --do_train\
 
 ### Evaluation
 ```angular2html
-python finetune.py --do_predict\
+python fixed_prompt.py --do_predict\
 --output_dir checkpoint/NarrativeQA_enp1_decp0_128\
 --predict_file NarrativeQA/test.tsv\
 --predict_batch_size 64\
