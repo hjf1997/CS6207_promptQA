@@ -7,7 +7,7 @@ from torch.optim import AdamW
 from transformers import BartTokenizer, BartConfig
 from transformers import get_linear_schedule_with_warmup
 
-from dataset import QAData
+from dataset_soft import QAData
 from bart_soft import QABart_prompt
 
 def run_prompt(args, logger):

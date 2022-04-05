@@ -5,7 +5,7 @@ import logging
 import random
 import numpy as np
 import torch
-from run_prompt import run_prompt
+from run_soft import run_prompt
 
 
 def main():
@@ -36,9 +36,10 @@ def main():
     # Training-related parameters
     parser.add_argument("--fix_LM", action='store_true')
     parser.add_argument("--randomize_prompt", action='store_true')
-    parser.add_argument("--train_batch_size", default=40, type=int,
+    parser.add_argument('--prompt_len', type=int, default=5)
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--predict_batch_size", default=400, type=int,
+    parser.add_argument("--predict_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument("--learning_rate", default=1e-5, type=float,
                         help="The initial learning rate for Adam.")
@@ -52,7 +53,7 @@ def main():
                         help="Max gradient norm.")
     parser.add_argument("--gradient_accumulation_steps", default=1, type=int,
                         help="Max gradient norm.")
-    parser.add_argument("--num_train_epochs", default=1000.0, type=float,
+    parser.add_argument("--num_train_epochs", default=500.0, type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_steps", default=0, type=int,
                         help="Linear warmup over warmup_steps.")
@@ -75,13 +76,6 @@ def main():
         print("Output directory () already exists and is not empty.")
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
-
-    # patterns = ['[Passage] [Question]'
-    #             '[Passage] [Question] <mask>',
-    #             '[Passage] [Question] The answer is <mask>',
-    #            '[Passage] According to the passage, [Question] <mask>',
-    #            'Based on the following passage, [Question] <mask>. [Passage]'
-    #            ]
 
     patterns = ['[Question] <mask>. [Passage]']
     args.pattern = patterns[args.pattern_id]
